@@ -38,32 +38,32 @@ protected:
 
     std::string m_start_source_ = "topic";  // "topic" or "tf"
     std::string m_start_topic_ = "start";
-    std::string m_start_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_start_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_start_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_start_topic_durability_ = m_default_qos_durability_;
 
     std::string m_goal_topic_ = "goals";
-    std::string m_goal_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_goal_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_goal_topic_durability_ = m_default_qos_durability_;
 
     std::string m_goal_tolerance_topic_ = "goal_tolerances";
-    std::string m_goal_tolerance_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_tolerance_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_goal_tolerance_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_goal_tolerance_topic_durability_ = m_default_qos_durability_;
 
     std::string m_terminal_cost_topic_ = "terminal_costs";
-    std::string m_terminal_cost_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_terminal_cost_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_terminal_cost_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_terminal_cost_topic_durability_ = m_default_qos_durability_;
 
     std::string m_path_topic_ = "path";
-    std::string m_path_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_path_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_path_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_path_topic_durability_ = m_default_qos_durability_;
 
     std::string m_cost_topic_ = "cost";
-    std::string m_cost_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_cost_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_cost_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_cost_topic_durability_ = m_default_qos_durability_;
 
     std::string m_goal_idx_topic_ = "goal_index";
-    std::string m_goal_idx_topic_qos_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_idx_topic_qos_durability_ = m_default_qos_durability_;
+    std::string m_goal_idx_topic_reliability_ = m_default_qos_reliability_;
+    std::string m_goal_idx_topic_durability_ = m_default_qos_durability_;
 
     std::string m_plan_srv_name_ = "plan_path";
     std::string m_reset_srv_name_ = "reset_planner";
@@ -120,26 +120,26 @@ public:
         this->declare_parameter("robot_frame", m_robot_frame_);
         this->declare_parameter("start_source", m_start_source_);
         this->declare_parameter("start_topic", m_start_topic_);
-        this->declare_parameter("start_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("start_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("start_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("start_topic_durability", m_default_qos_durability_);
         this->declare_parameter("goal_topic", m_goal_topic_);
-        this->declare_parameter("goal_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("goal_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("goal_topic_durability", m_default_qos_durability_);
         this->declare_parameter("goal_tolerance_topic", m_goal_tolerance_topic_);
-        this->declare_parameter("goal_tolerance_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_tolerance_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("goal_tolerance_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("goal_tolerance_topic_durability", m_default_qos_durability_);
         this->declare_parameter("terminal_cost_topic", m_terminal_cost_topic_);
-        this->declare_parameter("terminal_cost_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("terminal_cost_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("terminal_cost_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("terminal_cost_topic_durability", m_default_qos_durability_);
         this->declare_parameter("path_topic", m_path_topic_);
-        this->declare_parameter("path_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("path_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("path_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("path_topic_durability", m_default_qos_durability_);
         this->declare_parameter("cost_topic", m_cost_topic_);
-        this->declare_parameter("cost_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("cost_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("cost_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("cost_topic_durability", m_default_qos_durability_);
         this->declare_parameter("goal_idx_topic", m_goal_idx_topic_);
-        this->declare_parameter("goal_idx_topic_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_idx_topic_qos_durability", m_default_qos_durability_);
+        this->declare_parameter("goal_idx_topic_reliability", m_default_qos_reliability_);
+        this->declare_parameter("goal_idx_topic_durability", m_default_qos_durability_);
         this->declare_parameter("plan_srv_name", m_plan_srv_name_);
         this->declare_parameter("reset_srv_name", m_reset_srv_name_);
 
@@ -162,26 +162,26 @@ public:
         GET_PARAM("robot_frame", m_robot_frame_);
         GET_PARAM("start_source", m_start_source_);
         GET_PARAM("start_topic", m_start_topic_);
-        GET_PARAM("start_topic_qos_reliability", m_start_topic_qos_reliability_);
-        GET_PARAM("start_topic_qos_durability", m_start_topic_qos_durability_);
+        GET_PARAM("start_topic_reliability", m_start_topic_reliability_);
+        GET_PARAM("start_topic_durability", m_start_topic_durability_);
         GET_PARAM("goal_topic", m_goal_topic_);
-        GET_PARAM("goal_topic_qos_reliability", m_goal_topic_qos_reliability_);
-        GET_PARAM("goal_topic_qos_durability", m_goal_topic_qos_durability_);
+        GET_PARAM("goal_topic_reliability", m_goal_topic_reliability_);
+        GET_PARAM("goal_topic_durability", m_goal_topic_durability_);
         GET_PARAM("goal_tolerance_topic", m_goal_tolerance_topic_);
-        GET_PARAM("goal_tolerance_topic_qos_reliability", m_goal_tolerance_topic_qos_reliability_);
-        GET_PARAM("goal_tolerance_topic_qos_durability", m_goal_tolerance_topic_qos_durability_);
+        GET_PARAM("goal_tolerance_topic_reliability", m_goal_tolerance_topic_reliability_);
+        GET_PARAM("goal_tolerance_topic_durability", m_goal_tolerance_topic_durability_);
         GET_PARAM("terminal_cost_topic", m_terminal_cost_topic_);
-        GET_PARAM("terminal_cost_topic_qos_reliability", m_terminal_cost_topic_qos_reliability_);
-        GET_PARAM("terminal_cost_topic_qos_durability", m_terminal_cost_topic_qos_durability_);
+        GET_PARAM("terminal_cost_topic_reliability", m_terminal_cost_topic_reliability_);
+        GET_PARAM("terminal_cost_topic_durability", m_terminal_cost_topic_durability_);
         GET_PARAM("path_topic", m_path_topic_);
-        GET_PARAM("path_topic_qos_reliability", m_path_topic_qos_reliability_);
-        GET_PARAM("path_topic_qos_durability", m_path_topic_qos_durability_);
+        GET_PARAM("path_topic_reliability", m_path_topic_reliability_);
+        GET_PARAM("path_topic_durability", m_path_topic_durability_);
         GET_PARAM("cost_topic", m_cost_topic_);
-        GET_PARAM("cost_topic_qos_reliability", m_cost_topic_qos_reliability_);
-        GET_PARAM("cost_topic_qos_durability", m_cost_topic_qos_durability_);
+        GET_PARAM("cost_topic_reliability", m_cost_topic_reliability_);
+        GET_PARAM("cost_topic_durability", m_cost_topic_durability_);
         GET_PARAM("goal_idx_topic", m_goal_idx_topic_);
-        GET_PARAM("goal_idx_topic_qos_reliability", m_goal_idx_topic_qos_reliability_);
-        GET_PARAM("goal_idx_topic_qos_durability", m_goal_idx_topic_qos_durability_);
+        GET_PARAM("goal_idx_topic_reliability", m_goal_idx_topic_reliability_);
+        GET_PARAM("goal_idx_topic_durability", m_goal_idx_topic_durability_);
         GET_PARAM("plan_srv_name", m_plan_srv_name_);
         GET_PARAM("reset_srv_name", m_reset_srv_name_);
         GET_PARAM("eps", m_astar_setting_->eps);
@@ -200,26 +200,26 @@ public:
             "robot_frame: %s\n"
             "start_source: %s\n"
             "start_topic: %s\n"
-            "start_topic_qos_reliability: %s\n"
-            "start_topic_qos_durability: %s\n"
+            "start_topic_reliability: %s\n"
+            "start_topic_durability: %s\n"
             "goal_topic: %s\n"
-            "goal_topic_qos_reliability: %s\n"
-            "goal_topic_qos_durability: %s\n"
+            "goal_topic_reliability: %s\n"
+            "goal_topic_durability: %s\n"
             "goal_tolerance_topic: %s\n"
-            "goal_tolerance_topic_qos_reliability: %s\n"
-            "goal_tolerance_topic_qos_durability: %s\n"
+            "goal_tolerance_topic_reliability: %s\n"
+            "goal_tolerance_topic_durability: %s\n"
             "terminal_cost_topic: %s\n"
-            "terminal_cost_topic_qos_reliability: %s\n"
-            "terminal_cost_topic_qos_durability: %s\n"
+            "terminal_cost_topic_reliability: %s\n"
+            "terminal_cost_topic_durability: %s\n"
             "path_topic: %s\n"
-            "path_topic_qos_reliability: %s\n"
-            "path_topic_qos_durability: %s\n"
+            "path_topic_reliability: %s\n"
+            "path_topic_durability: %s\n"
             "cost_topic: %s\n"
-            "cost_topic_qos_reliability: %s\n"
-            "cost_topic_qos_durability: %s\n"
+            "cost_topic_reliability: %s\n"
+            "cost_topic_durability: %s\n"
             "goal_idx_topic: %s\n"
-            "goal_idx_topic_qos_reliability: %s\n"
-            "goal_idx_topic_qos_durability: %s\n"
+            "goal_idx_topic_reliability: %s\n"
+            "goal_idx_topic_durability: %s\n"
             "plan_srv_name: %s\n"
             "reset_srv_name: %s\n"
             "eps: %f\n"
@@ -232,26 +232,26 @@ public:
             m_robot_frame_.c_str(),
             m_start_source_.c_str(),
             m_start_topic_.c_str(),
-            m_start_topic_qos_reliability_.c_str(),
-            m_start_topic_qos_durability_.c_str(),
+            m_start_topic_reliability_.c_str(),
+            m_start_topic_durability_.c_str(),
             m_goal_topic_.c_str(),
-            m_goal_topic_qos_reliability_.c_str(),
-            m_goal_topic_qos_durability_.c_str(),
+            m_goal_topic_reliability_.c_str(),
+            m_goal_topic_durability_.c_str(),
             m_goal_tolerance_topic_.c_str(),
-            m_goal_tolerance_topic_qos_reliability_.c_str(),
-            m_goal_tolerance_topic_qos_durability_.c_str(),
+            m_goal_tolerance_topic_reliability_.c_str(),
+            m_goal_tolerance_topic_durability_.c_str(),
             m_terminal_cost_topic_.c_str(),
-            m_terminal_cost_topic_qos_reliability_.c_str(),
-            m_terminal_cost_topic_qos_durability_.c_str(),
+            m_terminal_cost_topic_reliability_.c_str(),
+            m_terminal_cost_topic_durability_.c_str(),
             m_path_topic_.c_str(),
-            m_path_topic_qos_reliability_.c_str(),
-            m_path_topic_qos_durability_.c_str(),
+            m_path_topic_reliability_.c_str(),
+            m_path_topic_durability_.c_str(),
             m_cost_topic_.c_str(),
-            m_cost_topic_qos_reliability_.c_str(),
-            m_cost_topic_qos_durability_.c_str(),
+            m_cost_topic_reliability_.c_str(),
+            m_cost_topic_durability_.c_str(),
             m_goal_idx_topic_.c_str(),
-            m_goal_idx_topic_qos_reliability_.c_str(),
-            m_goal_idx_topic_qos_durability_.c_str(),
+            m_goal_idx_topic_reliability_.c_str(),
+            m_goal_idx_topic_durability_.c_str(),
             m_plan_srv_name_.c_str(),
             m_reset_srv_name_.c_str(),
             m_astar_setting_->eps,
@@ -334,7 +334,7 @@ public:
         // Initialize subscribers
         m_start_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             m_start_topic_,
-            GetQoS(m_start_topic_qos_reliability_, m_start_topic_qos_durability_),
+            GetQoS(m_start_topic_reliability_, m_start_topic_durability_),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_start_mutex_);
                 m_start_ = *msg;
@@ -343,7 +343,7 @@ public:
 
         m_goal_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             m_goal_topic_,
-            GetQoS(m_goal_topic_qos_reliability_, m_goal_topic_qos_durability_),
+            GetQoS(m_goal_topic_reliability_, m_goal_topic_durability_),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_goals_mutex_);
                 m_goals_ = *msg;
@@ -352,7 +352,7 @@ public:
 
         m_goal_tolerance_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             m_goal_tolerance_topic_,
-            GetQoS(m_goal_tolerance_topic_qos_reliability_, m_goal_tolerance_topic_qos_durability_),
+            GetQoS(m_goal_tolerance_topic_reliability_, m_goal_tolerance_topic_durability_),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_goal_tolerances_mutex_);
                 m_goal_tolerances_ = *msg;
@@ -361,7 +361,7 @@ public:
 
         m_terminal_cost_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             m_terminal_cost_topic_,
-            GetQoS(m_terminal_cost_topic_qos_reliability_, m_terminal_cost_topic_qos_durability_),
+            GetQoS(m_terminal_cost_topic_reliability_, m_terminal_cost_topic_durability_),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_terminal_costs_mutex_);
                 m_terminal_costs_ = *msg;
@@ -371,13 +371,13 @@ public:
         // Initialize publisher
         m_path_pub_ = this->create_publisher<nav_msgs::msg::Path>(
             m_path_topic_,
-            GetQoS(m_path_topic_qos_reliability_, m_path_topic_qos_durability_));
+            GetQoS(m_path_topic_reliability_, m_path_topic_durability_));
         m_cost_pub_ = this->create_publisher<std_msgs::msg::Float64>(
             m_cost_topic_,
-            GetQoS(m_cost_topic_qos_reliability_, m_cost_topic_qos_durability_));
+            GetQoS(m_cost_topic_reliability_, m_cost_topic_durability_));
         m_goal_idx_pub_ = this->create_publisher<std_msgs::msg::Int64>(
             m_goal_idx_topic_,
-            GetQoS(m_goal_idx_topic_qos_reliability_, m_goal_idx_topic_qos_durability_));
+            GetQoS(m_goal_idx_topic_reliability_, m_goal_idx_topic_durability_));
 
         // Initialize services
         m_plan_srv_ = this->create_service<std_srvs::srv::Trigger>(

@@ -44,28 +44,28 @@ All A\* nodes inherit from a common base class (`AstarNode`) that provides the f
 
 #### Input Topics
 - `start_topic` (string, default: "start"): Start pose topic
-- `start_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `start_topic_qos_durability` (string, default: uses default_qos_durability)
+- `start_topic_reliability` (string, default: uses default_qos_reliability)
+- `start_topic_durability` (string, default: uses default_qos_durability)
 - `goal_topic` (string, default: "goals"): Goal positions topic
-- `goal_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `goal_topic_qos_durability` (string, default: uses default_qos_durability)
+- `goal_topic_reliability` (string, default: uses default_qos_reliability)
+- `goal_topic_durability` (string, default: uses default_qos_durability)
 - `goal_tolerance_topic` (string, default: "goal_tolerances"): Goal tolerances topic
-- `goal_tolerance_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `goal_tolerance_topic_qos_durability` (string, default: uses default_qos_durability)
+- `goal_tolerance_topic_reliability` (string, default: uses default_qos_reliability)
+- `goal_tolerance_topic_durability` (string, default: uses default_qos_durability)
 - `terminal_cost_topic` (string, default: "terminal_costs"): Terminal costs topic
-- `terminal_cost_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `terminal_cost_topic_qos_durability` (string, default: uses default_qos_durability)
+- `terminal_cost_topic_reliability` (string, default: uses default_qos_reliability)
+- `terminal_cost_topic_durability` (string, default: uses default_qos_durability)
 
 #### Output Topics
 - `path_topic` (string, default: "plan"): Path output topic
-- `path_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `path_topic_qos_durability` (string, default: uses default_qos_durability)
+- `path_topic_reliability` (string, default: uses default_qos_reliability)
+- `path_topic_durability` (string, default: uses default_qos_durability)
 - `cost_topic` (string, default: "cost"): Cost output topic
-- `cost_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `cost_topic_qos_durability` (string, default: uses default_qos_durability)
+- `cost_topic_reliability` (string, default: uses default_qos_reliability)
+- `cost_topic_durability` (string, default: uses default_qos_durability)
 - `goal_idx_topic` (string, default: "goal_idx"): Goal index output topic
-- `goal_idx_topic_qos_reliability` (string, default: uses default_qos_reliability)
-- `goal_idx_topic_qos_durability` (string, default: uses default_qos_durability)
+- `goal_idx_topic_reliability` (string, default: uses default_qos_reliability)
+- `goal_idx_topic_durability` (string, default: uses default_qos_durability)
 
 #### Services
 - `plan_srv_name` (string, default: "plan"): Planning service name
@@ -110,8 +110,8 @@ See [Common Parameters for A\* Based Nodes](#common-parameters-for-a-based-nodes
 
 *Map Configuration:*
 - `map_topic` (string, default: "map"): Occupancy grid topic
-- `map_topic_qos_reliability` (string, default: "best_effort"): QoS reliability setting
-- `map_topic_qos_durability` (string, default: "transient_local"): QoS durability setting
+- `map_topic_reliability` (string, default: "best_effort"): QoS reliability setting
+- `map_topic_durability` (string, default: "transient_local"): QoS durability setting
 
 *Motion Primitives:*
 - `max_axis_step` (int, default: 1): Maximum step along one axis for motion primitives
@@ -157,14 +157,14 @@ See [Common Parameters for A\* Based Nodes](#common-parameters-for-a-based-nodes
 
 **Additional LTL-Specific Topics:**
 - `label_map_topic` (string, default: "label_map"): Label map topic
-- `label_map_topic_qos_reliability` (string, default: "best_effort")
-- `label_map_topic_qos_durability` (string, default: "transient_local")
+- `label_map_topic_reliability` (string, default: "best_effort")
+- `label_map_topic_durability` (string, default: "transient_local")
 - `occ_map_topic` (string, default: "occ_map"): Occupancy map topic
-- `occ_map_topic_qos_reliability` (string, default: "best_effort")
-- `occ_map_topic_qos_durability` (string, default: "transient_local")
+- `occ_map_topic_reliability` (string, default: "best_effort")
+- `occ_map_topic_durability` (string, default: "transient_local")
 - `fsa_topic` (string, default: "fsa_spot"): FSA topic in Spot HOA format
-- `fsa_topic_qos_reliability` (string, default: "reliable")
-- `fsa_topic_qos_durability` (string, default: "transient_local")
+- `fsa_topic_reliability` (string, default: "reliable")
+- `fsa_topic_durability` (string, default: "transient_local")
 - `ap_dict_topic` (string, default: "ap_dict"): Atomic proposition dictionary output topic
 
 **Note:** The `astar_2d_ltl_node` does not use the `map_topic` parameter. Instead, it uses `occ_map_topic` and `label_map_topic` for separate occupancy and label information.

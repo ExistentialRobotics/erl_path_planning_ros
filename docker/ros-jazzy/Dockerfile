@@ -42,7 +42,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y \
     ros-jazzy-tf2-py \
     ros-jazzy-tf2-ros \
     ros-jazzy-tf2-sensor-msgs \
-    ros-jazzy-tf2-tools
+    ros-jazzy-tf2-tools \
+    ros-jazzy-rqt*
 RUN rosdep init && rosdep update
 
 # clean

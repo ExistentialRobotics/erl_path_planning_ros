@@ -28,17 +28,17 @@ public:
 
 private:
     std::string m_label_map_topic_ = "label_map";
-    std::string m_label_map_topic_qos_reliability_ = "reliable";
-    std::string m_label_map_topic_qos_durability_ = "volatile";
+    std::string m_label_map_topic_reliability_ = "reliable";
+    std::string m_label_map_topic_durability_ = "volatile";
     std::string m_occ_map_topic_ = "occ_map";
-    std::string m_occ_map_topic_qos_reliability_ = "reliable";
-    std::string m_occ_map_topic_qos_durability_ = "volatile";
+    std::string m_occ_map_topic_reliability_ = "reliable";
+    std::string m_occ_map_topic_durability_ = "volatile";
     std::string m_aut_topic_ = "aut_spot";  // spot HOA format
-    std::string m_aut_topic_qos_reliability_ = "reliable";
-    std::string m_aut_topic_qos_durability_ = "volatile";
+    std::string m_aut_topic_reliability_ = "reliable";
+    std::string m_aut_topic_durability_ = "volatile";
     std::string m_ap_dict_topic_ = "ap_dict";
-    std::string m_ap_dict_topic_qos_reliability_ = "reliable";
-    std::string m_ap_dict_topic_qos_durability_ = "volatile";
+    std::string m_ap_dict_topic_reliability_ = "reliable";
+    std::string m_ap_dict_topic_durability_ = "volatile";
 
     int m_max_axis_step_ = 1;  // max step along one axis for motion primitives
     bool m_allow_diagonal_ = true;
@@ -76,22 +76,20 @@ public:
 
         // Declare parameters
         this->declare_parameter("label_map_topic", m_label_map_topic_);
-        this->declare_parameter(
-            "label_map_topic_qos_reliability",
-            this->m_default_qos_reliability_);
-        this->declare_parameter("label_map_topic_qos_durability", this->m_default_qos_durability_);
+        this->declare_parameter("label_map_topic_reliability", this->m_default_qos_reliability_);
+        this->declare_parameter("label_map_topic_durability", this->m_default_qos_durability_);
 
         this->declare_parameter("occ_map_topic", m_occ_map_topic_);
-        this->declare_parameter("occ_map_topic_qos_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("occ_map_topic_qos_durability", this->m_default_qos_durability_);
+        this->declare_parameter("occ_map_topic_reliability", this->m_default_qos_reliability_);
+        this->declare_parameter("occ_map_topic_durability", this->m_default_qos_durability_);
 
         this->declare_parameter("aut_topic", m_aut_topic_);
-        this->declare_parameter("aut_topic_qos_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("aut_topic_qos_durability", this->m_default_qos_durability_);
+        this->declare_parameter("aut_topic_reliability", this->m_default_qos_reliability_);
+        this->declare_parameter("aut_topic_durability", this->m_default_qos_durability_);
 
         this->declare_parameter("ap_dict_topic", m_ap_dict_topic_);
-        this->declare_parameter("ap_dict_topic_qos_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("ap_dict_topic_qos_durability", this->m_default_qos_durability_);
+        this->declare_parameter("ap_dict_topic_reliability", this->m_default_qos_reliability_);
+        this->declare_parameter("ap_dict_topic_durability", this->m_default_qos_durability_);
 
         this->declare_parameter("max_axis_step", m_max_axis_step_);
         this->declare_parameter("allow_diagonal", m_allow_diagonal_);
@@ -111,20 +109,20 @@ public:
     (void) 0
 
         GET_PARAM("label_map_topic", m_label_map_topic_);
-        GET_PARAM("label_map_topic_qos_reliability", m_label_map_topic_qos_reliability_);
-        GET_PARAM("label_map_topic_qos_durability", m_label_map_topic_qos_durability_);
+        GET_PARAM("label_map_topic_reliability", m_label_map_topic_reliability_);
+        GET_PARAM("label_map_topic_durability", m_label_map_topic_durability_);
 
         GET_PARAM("occ_map_topic", m_occ_map_topic_);
-        GET_PARAM("occ_map_topic_qos_reliability", m_occ_map_topic_qos_reliability_);
-        GET_PARAM("occ_map_topic_qos_durability", m_occ_map_topic_qos_durability_);
+        GET_PARAM("occ_map_topic_reliability", m_occ_map_topic_reliability_);
+        GET_PARAM("occ_map_topic_durability", m_occ_map_topic_durability_);
 
         GET_PARAM("aut_topic", m_aut_topic_);
-        GET_PARAM("aut_topic_qos_reliability", m_aut_topic_qos_reliability_);
-        GET_PARAM("aut_topic_qos_durability", m_aut_topic_qos_durability_);
+        GET_PARAM("aut_topic_reliability", m_aut_topic_reliability_);
+        GET_PARAM("aut_topic_durability", m_aut_topic_durability_);
 
         GET_PARAM("ap_dict_topic", m_ap_dict_topic_);
-        GET_PARAM("ap_dict_topic_qos_reliability", m_ap_dict_topic_qos_reliability_);
-        GET_PARAM("ap_dict_topic_qos_durability", m_ap_dict_topic_qos_durability_);
+        GET_PARAM("ap_dict_topic_reliability", m_ap_dict_topic_reliability_);
+        GET_PARAM("ap_dict_topic_durability", m_ap_dict_topic_durability_);
 
         GET_PARAM("max_axis_step", m_max_axis_step_);
         GET_PARAM("allow_diagonal", m_allow_diagonal_);
@@ -139,17 +137,17 @@ public:
             this->get_logger(),
             "Loaded parameters:\n"
             "label_map_topic: %s\n"
-            "label_map_topic_qos_reliability: %s\n"
-            "label_map_topic_qos_durability: %s\n"
+            "label_map_topic_reliability: %s\n"
+            "label_map_topic_durability: %s\n"
             "occ_map_topic: %s\n"
-            "occ_map_topic_qos_reliability: %s\n"
-            "occ_map_topic_qos_durability: %s\n"
+            "occ_map_topic_reliability: %s\n"
+            "occ_map_topic_durability: %s\n"
             "aut_topic: %s\n"
-            "aut_topic_qos_reliability: %s\n"
-            "aut_topic_qos_durability: %s\n"
+            "aut_topic_reliability: %s\n"
+            "aut_topic_durability: %s\n"
             "ap_dict_topic: %s\n"
-            "ap_dict_topic_qos_reliability: %s\n"
-            "ap_dict_topic_qos_durability: %s\n"
+            "ap_dict_topic_reliability: %s\n"
+            "ap_dict_topic_durability: %s\n"
             "max_axis_step: %d\n"
             "allow_diagonal: %s\n"
             "robot_metric_contour size: %lu\n"
@@ -157,17 +155,17 @@ public:
             "add_map_cost: %s\n"
             "map_cost_factor: %f",
             m_label_map_topic_.c_str(),
-            m_label_map_topic_qos_reliability_.c_str(),
-            m_label_map_topic_qos_durability_.c_str(),
+            m_label_map_topic_reliability_.c_str(),
+            m_label_map_topic_durability_.c_str(),
             m_occ_map_topic_.c_str(),
-            m_occ_map_topic_qos_reliability_.c_str(),
-            m_occ_map_topic_qos_durability_.c_str(),
+            m_occ_map_topic_reliability_.c_str(),
+            m_occ_map_topic_durability_.c_str(),
             m_aut_topic_.c_str(),
-            m_aut_topic_qos_reliability_.c_str(),
-            m_aut_topic_qos_durability_.c_str(),
+            m_aut_topic_reliability_.c_str(),
+            m_aut_topic_durability_.c_str(),
             m_ap_dict_topic_.c_str(),
-            m_ap_dict_topic_qos_reliability_.c_str(),
-            m_ap_dict_topic_qos_durability_.c_str(),
+            m_ap_dict_topic_reliability_.c_str(),
+            m_ap_dict_topic_durability_.c_str(),
             m_max_axis_step_,
             (m_allow_diagonal_ ? "true" : "false"),
             m_robot_metric_contour_.size(),
@@ -206,12 +204,12 @@ public:
         // Initialize publishers
         m_ap_dict_pub_ = this->template create_publisher<std_msgs::msg::String>(
             m_ap_dict_topic_,
-            Super::GetQoS(m_ap_dict_topic_qos_reliability_, m_ap_dict_topic_qos_durability_));
+            Super::GetQoS(m_ap_dict_topic_reliability_, m_ap_dict_topic_durability_));
 
         // Initialize subscribers
         m_label_map_sub_ = this->template create_subscription<erl_geometry_msgs::msg::GridMapMsg>(
             m_label_map_topic_,
-            Super::GetQoS(m_label_map_topic_qos_reliability_, m_label_map_topic_qos_durability_),
+            Super::GetQoS(m_label_map_topic_reliability_, m_label_map_topic_durability_),
             [this](const erl_geometry_msgs::msg::GridMapMsg::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_label_map_mutex_);
                 m_label_map_ = *msg;
@@ -220,7 +218,7 @@ public:
 
         m_occ_map_sub_ = this->template create_subscription<nav_msgs::msg::OccupancyGrid>(
             m_occ_map_topic_,
-            Super::GetQoS(m_occ_map_topic_qos_reliability_, m_occ_map_topic_qos_durability_),
+            Super::GetQoS(m_occ_map_topic_reliability_, m_occ_map_topic_durability_),
             [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_occ_map_mutex_);
                 m_occ_map_ = *msg;
@@ -229,7 +227,7 @@ public:
 
         m_aut_sub_ = this->template create_subscription<std_msgs::msg::String>(
             m_aut_topic_,
-            Super::GetQoS(m_aut_topic_qos_reliability_, m_aut_topic_qos_durability_),
+            Super::GetQoS(m_aut_topic_reliability_, m_aut_topic_durability_),
             [this](const std_msgs::msg::String::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_aut_mutex_);
                 m_aut_msg_ = *msg;

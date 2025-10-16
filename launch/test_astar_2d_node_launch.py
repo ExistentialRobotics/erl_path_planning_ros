@@ -23,23 +23,29 @@ def generate_launch_description():
         executable="astar_2d_node",
         name="astar_2d_node",
         # prefix=["gdbserver localhost:3000"],
-        parameters=[{
-            "default_qos_reliability": "reliable",
-            "default_qos_durability": "transient_local",
-        }],
+        parameters=[
+            {
+                "default_qos_reliability": "reliable",
+                "default_qos_durability": "transient_local",
+            }
+        ],
         output="screen",
     )
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        arguments=["-d",
-                   PathJoinSubstitution([FindPackageShare("erl_path_planning_ros"), "rviz2", "test_astar_2d_node.rviz"])],
+        arguments=[
+            "-d",
+            PathJoinSubstitution([FindPackageShare("erl_path_planning_ros"), "rviz2", "test_astar_2d_node.rviz"]),
+        ],
         output="screen",
     )
-    return LaunchDescription([
-        map_broadcast_node,
-        test_astar_2d_node,
-        astar_2d_node,
-        rviz_node,
-    ])
+    return LaunchDescription(
+        [
+            map_broadcast_node,
+            test_astar_2d_node,
+            astar_2d_node,
+            rviz_node,
+        ]
+    )

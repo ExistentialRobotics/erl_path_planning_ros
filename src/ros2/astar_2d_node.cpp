@@ -21,8 +21,8 @@ public:
 
 private:
     std::string m_map_topic_ = "map";
-    std::string m_map_topic_qos_reliability_ = "reliable";
-    std::string m_map_topic_qos_durability_ = "volatile";
+    std::string m_map_topic_reliability_ = "reliable";
+    std::string m_map_topic_durability_ = "volatile";
 
     int m_max_axis_step_ = 1;  // max step along one axis for motion primitives
     bool m_allow_diagonal_ = true;
@@ -41,8 +41,8 @@ public:
 
         // Declare parameters
         this->declare_parameter("map_topic", m_map_topic_);
-        this->declare_parameter("map_topic_qos_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("map_topic_qos_durability", this->m_default_qos_durability_);
+        this->declare_parameter("map_topic_reliability", this->m_default_qos_reliability_);
+        this->declare_parameter("map_topic_durability", this->m_default_qos_durability_);
         this->declare_parameter("max_axis_step", m_max_axis_step_);
         this->declare_parameter("allow_diagonal", m_allow_diagonal_);
         this->declare_parameter("robot_metric_contour", m_robot_metric_contour_);
@@ -61,8 +61,8 @@ public:
     (void) 0
 
         GET_PARAM("map_topic", m_map_topic_);
-        GET_PARAM("map_topic_qos_reliability", m_map_topic_qos_reliability_);
-        GET_PARAM("map_topic_qos_durability", m_map_topic_qos_durability_);
+        GET_PARAM("map_topic_reliability", m_map_topic_reliability_);
+        GET_PARAM("map_topic_durability", m_map_topic_durability_);
         GET_PARAM("max_axis_step", m_max_axis_step_);
         GET_PARAM("allow_diagonal", m_allow_diagonal_);
         GET_PARAM("robot_metric_contour", m_robot_metric_contour_);
@@ -76,8 +76,8 @@ public:
             this->get_logger(),
             "Loaded parameters:\n"
             "map_topic: %s\n"
-            "map_topic_qos_reliability: %s\n"
-            "map_topic_qos_durability: %s\n"
+            "map_topic_reliability: %s\n"
+            "map_topic_durability: %s\n"
             "max_axis_step: %d\n"
             "allow_diagonal: %s\n"
             "robot_metric_contour size: %lu\n"
@@ -85,8 +85,8 @@ public:
             "add_map_cost: %s\n"
             "map_cost_factor: %f",
             m_map_topic_.c_str(),
-            m_map_topic_qos_reliability_.c_str(),
-            m_map_topic_qos_durability_.c_str(),
+            m_map_topic_reliability_.c_str(),
+            m_map_topic_durability_.c_str(),
             m_max_axis_step_,
             m_allow_diagonal_ ? "true" : "false",
             m_robot_metric_contour_.size(),
@@ -125,7 +125,7 @@ public:
         // Initialize subscribers
         m_map_sub_ = this->template create_subscription<nav_msgs::msg::OccupancyGrid>(
             m_map_topic_,
-            Super::GetQoS(m_map_topic_qos_reliability_, m_map_topic_qos_durability_),
+            Super::GetQoS(m_map_topic_reliability_, m_map_topic_durability_),
             [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_map_mutex_);
                 m_map_ = *msg;
