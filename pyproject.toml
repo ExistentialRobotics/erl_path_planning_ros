@@ -5,7 +5,6 @@ requires = ["setuptools", "wheel", "toml"]
 line-length = 120
 
 [erl]
-pybind_module_name = None
 erl_dependencies = ["erl_common", "erl_env", "erl_geometry", "erl_path_planning"]
 build_type = "Release"
 
@@ -14,13 +13,13 @@ name = "erl_path_planning_ros"
 version = "0.1.0"
 description = "Python package for erl_path_planning_ros"
 authors = [
-    { name = "Zhirui Dai", email = "zhdai@ucsd.edu" }
+    { name = "Zhirui Dai", email = "daizhirui@hotmail.com" }
 ]
 maintainers = [
-    { name = "Zhirui Dai", email = "zhdai@ucsd.edu" }
+    { name = "Zhirui Dai", email = "daizhirui@hotmail.com" }
 ]
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
 dependencies = []
 

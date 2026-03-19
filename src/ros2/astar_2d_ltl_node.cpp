@@ -12,6 +12,32 @@
 #include <mutex>
 
 template<typename Dtype, typename MapDtype>
+struct Astar2dLtlNodeConfig : public erl::common::Yamlable<Astar2dLtlNodeConfig<Dtype, MapDtype>> {
+    using Ros2TopicParams = erl::common::ros_params::Ros2TopicParams;
+    using Env2dLtl = erl::env::EnvironmentLTL2D<Dtype, MapDtype>;
+    using Env2dLtlSetting = typename Env2dLtl::Setting;
+
+    Ros2TopicParams label_map_topic{"label_map"};
+    Ros2TopicParams occ_map_topic{"occ_map"};
+    Ros2TopicParams aut_topic{"aut_spot"};
+    Ros2TopicParams ap_dict_topic{"ap_dict"};
+
+    int max_axis_step = 1;
+    bool allow_diagonal = true;
+    std::shared_ptr<Env2dLtlSetting> env = std::make_shared<Env2dLtlSetting>();
+
+    ERL_REFLECT_SCHEMA(
+        Astar2dLtlNodeConfig,
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, label_map_topic),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, occ_map_topic),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, aut_topic),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, ap_dict_topic),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, max_axis_step),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, allow_diagonal),
+        ERL_REFLECT_MEMBER(Astar2dLtlNodeConfig, env));
+};
+
+template<typename Dtype, typename MapDtype>
 class Astar2dLtlNode : public AstarNode<Dtype, 3> {
 public:
     using Super = AstarNode<Dtype, 3>;
@@ -20,30 +46,14 @@ public:
     using Heuristic = typename Super::Heuristic;
     using PlanRecord = typename Super::PlanRecord;
     using GridMapInfo2D = erl::common::GridMapInfo2D<Dtype>;
-    using Env2dLtl = erl::env::EnvironmentLTL2D<Dtype, MapDtype>;  // occ map type is int8_t
+    using Env2dLtl = erl::env::EnvironmentLTL2D<Dtype, MapDtype>;
     using Env2dLtlSetting = typename Env2dLtl::Setting;
     using LtlHeuristic = erl::path_planning::LinearTemporalLogicHeuristic2D<Dtype>;
     using Cost = erl::env::EuclideanDistanceCost<Dtype, 2>;
     using FiniteStateAutomaton = erl::env::FiniteStateAutomaton;
 
 private:
-    std::string m_label_map_topic_ = "label_map";
-    std::string m_label_map_topic_reliability_ = "reliable";
-    std::string m_label_map_topic_durability_ = "volatile";
-    std::string m_occ_map_topic_ = "occ_map";
-    std::string m_occ_map_topic_reliability_ = "reliable";
-    std::string m_occ_map_topic_durability_ = "volatile";
-    std::string m_aut_topic_ = "aut_spot";  // spot HOA format
-    std::string m_aut_topic_reliability_ = "reliable";
-    std::string m_aut_topic_durability_ = "volatile";
-    std::string m_ap_dict_topic_ = "ap_dict";
-    std::string m_ap_dict_topic_reliability_ = "reliable";
-    std::string m_ap_dict_topic_durability_ = "volatile";
-
-    int m_max_axis_step_ = 1;  // max step along one axis for motion primitives
-    bool m_allow_diagonal_ = true;
-    std::vector<double> m_robot_metric_contour_ = {};
-    std::shared_ptr<Env2dLtlSetting> m_env_setting_ = std::make_shared<Env2dLtlSetting>();
+    Astar2dLtlNodeConfig<Dtype, MapDtype> m_ltl_config_;
     std::shared_ptr<Cost> m_cost_ = std::make_shared<Cost>();
 
     rclcpp::Subscription<erl_geometry_msgs::msg::GridMapMsg>::SharedPtr m_label_map_sub_;
@@ -71,145 +81,30 @@ private:
     std::mutex m_env_mutex_;
 
 public:
-    Astar2dLtlNode(const std::string& node_name = "astar_2d_ltl_node")
+    Astar2dLtlNode(const std::string &node_name = "astar_2d_ltl_node")
         : Super(node_name) {
 
-        // Declare parameters
-        this->declare_parameter("label_map_topic", m_label_map_topic_);
-        this->declare_parameter("label_map_topic_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("label_map_topic_durability", this->m_default_qos_durability_);
+        // Load parameters via Yamlable interface
+        ERL_ASSERTM(m_ltl_config_.LoadFromRos2(this, ""), "Failed to load parameters.");
 
-        this->declare_parameter("occ_map_topic", m_occ_map_topic_);
-        this->declare_parameter("occ_map_topic_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("occ_map_topic_durability", this->m_default_qos_durability_);
-
-        this->declare_parameter("aut_topic", m_aut_topic_);
-        this->declare_parameter("aut_topic_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("aut_topic_durability", this->m_default_qos_durability_);
-
-        this->declare_parameter("ap_dict_topic", m_ap_dict_topic_);
-        this->declare_parameter("ap_dict_topic_reliability", this->m_default_qos_reliability_);
-        this->declare_parameter("ap_dict_topic_durability", this->m_default_qos_durability_);
-
-        this->declare_parameter("max_axis_step", m_max_axis_step_);
-        this->declare_parameter("allow_diagonal", m_allow_diagonal_);
-        this->declare_parameter("robot_metric_contour", m_robot_metric_contour_);
-        this->declare_parameter("obstacle_threshold", m_env_setting_->obstacle_threshold);
-        this->declare_parameter("add_map_cost", m_env_setting_->add_map_cost);
-        this->declare_parameter("map_cost_factor", m_env_setting_->map_cost_factor);
-
-        // Get parameters
-#define GET_PARAM(param_name, member)                           \
-    if (!this->get_parameter(param_name, member)) {             \
-        RCLCPP_WARN(                                            \
-            this->get_logger(),                                 \
-            "Failed to get parameter %s, using default value.", \
-            param_name);                                        \
-    }                                                           \
-    (void) 0
-
-        GET_PARAM("label_map_topic", m_label_map_topic_);
-        GET_PARAM("label_map_topic_reliability", m_label_map_topic_reliability_);
-        GET_PARAM("label_map_topic_durability", m_label_map_topic_durability_);
-
-        GET_PARAM("occ_map_topic", m_occ_map_topic_);
-        GET_PARAM("occ_map_topic_reliability", m_occ_map_topic_reliability_);
-        GET_PARAM("occ_map_topic_durability", m_occ_map_topic_durability_);
-
-        GET_PARAM("aut_topic", m_aut_topic_);
-        GET_PARAM("aut_topic_reliability", m_aut_topic_reliability_);
-        GET_PARAM("aut_topic_durability", m_aut_topic_durability_);
-
-        GET_PARAM("ap_dict_topic", m_ap_dict_topic_);
-        GET_PARAM("ap_dict_topic_reliability", m_ap_dict_topic_reliability_);
-        GET_PARAM("ap_dict_topic_durability", m_ap_dict_topic_durability_);
-
-        GET_PARAM("max_axis_step", m_max_axis_step_);
-        GET_PARAM("allow_diagonal", m_allow_diagonal_);
-        GET_PARAM("robot_metric_contour", m_robot_metric_contour_);
-        GET_PARAM("obstacle_threshold", m_env_setting_->obstacle_threshold);
-        GET_PARAM("add_map_cost", m_env_setting_->add_map_cost);
-        GET_PARAM("map_cost_factor", m_env_setting_->map_cost_factor);
-#undef GET_PARAM
-
-        // Print parameters
         RCLCPP_INFO(
             this->get_logger(),
-            "Loaded parameters:\n"
-            "label_map_topic: %s\n"
-            "label_map_topic_reliability: %s\n"
-            "label_map_topic_durability: %s\n"
-            "occ_map_topic: %s\n"
-            "occ_map_topic_reliability: %s\n"
-            "occ_map_topic_durability: %s\n"
-            "aut_topic: %s\n"
-            "aut_topic_reliability: %s\n"
-            "aut_topic_durability: %s\n"
-            "ap_dict_topic: %s\n"
-            "ap_dict_topic_reliability: %s\n"
-            "ap_dict_topic_durability: %s\n"
-            "max_axis_step: %d\n"
-            "allow_diagonal: %s\n"
-            "robot_metric_contour size: %lu\n"
-            "obstacle_threshold: %d\n"
-            "add_map_cost: %s\n"
-            "map_cost_factor: %f",
-            m_label_map_topic_.c_str(),
-            m_label_map_topic_reliability_.c_str(),
-            m_label_map_topic_durability_.c_str(),
-            m_occ_map_topic_.c_str(),
-            m_occ_map_topic_reliability_.c_str(),
-            m_occ_map_topic_durability_.c_str(),
-            m_aut_topic_.c_str(),
-            m_aut_topic_reliability_.c_str(),
-            m_aut_topic_durability_.c_str(),
-            m_ap_dict_topic_.c_str(),
-            m_ap_dict_topic_reliability_.c_str(),
-            m_ap_dict_topic_durability_.c_str(),
-            m_max_axis_step_,
-            (m_allow_diagonal_ ? "true" : "false"),
-            m_robot_metric_contour_.size(),
-            m_env_setting_->obstacle_threshold,
-            (m_env_setting_->add_map_cost ? "true" : "false"),
-            m_env_setting_->map_cost_factor);
+            "Loaded LTL parameters:\n%s",
+            m_ltl_config_.AsYamlString().c_str());
 
-        // Set environment setting
-        if (m_robot_metric_contour_.size() > 0) {
-            if (m_robot_metric_contour_.size() % 2 != 0) {
-                RCLCPP_FATAL(
-                    this->get_logger(),
-                    "robot_metric_contour size must be even, got size %ld.",
-                    m_robot_metric_contour_.size());
-                rclcpp::shutdown();
-                exit(EXIT_FAILURE);
-            }
-            if (m_robot_metric_contour_.size() < 6) {
-                RCLCPP_FATAL(
-                    this->get_logger(),
-                    "robot_metric_contour must have at least 3 points, got %ld points.",
-                    m_robot_metric_contour_.size() / 2);
-                rclcpp::shutdown();
-                exit(EXIT_FAILURE);
-            }
-            const auto n_points = static_cast<long>(m_robot_metric_contour_.size() >> 1);
-            Eigen::Matrix2X<Dtype> contour(2, n_points);
-            for (long i = 0; i < n_points; ++i) {
-                contour(0, i) = m_robot_metric_contour_[2 * i];
-                contour(1, i) = m_robot_metric_contour_[2 * i + 1];
-            }
-            m_env_setting_->robot_metric_contour = std::move(contour);
-        }
-        m_env_setting_->SetGridMotionPrimitive(m_max_axis_step_, m_allow_diagonal_);
+        m_ltl_config_.env->SetGridMotionPrimitive(
+            m_ltl_config_.max_axis_step,
+            m_ltl_config_.allow_diagonal);
 
         // Initialize publishers
         m_ap_dict_pub_ = this->template create_publisher<std_msgs::msg::String>(
-            m_ap_dict_topic_,
-            Super::GetQoS(m_ap_dict_topic_reliability_, m_ap_dict_topic_durability_));
+            m_ltl_config_.ap_dict_topic.path,
+            m_ltl_config_.ap_dict_topic.GetQoS());
 
         // Initialize subscribers
         m_label_map_sub_ = this->template create_subscription<erl_geometry_msgs::msg::GridMapMsg>(
-            m_label_map_topic_,
-            Super::GetQoS(m_label_map_topic_reliability_, m_label_map_topic_durability_),
+            m_ltl_config_.label_map_topic.path,
+            m_ltl_config_.label_map_topic.GetQoS(),
             [this](const erl_geometry_msgs::msg::GridMapMsg::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_label_map_mutex_);
                 m_label_map_ = *msg;
@@ -217,8 +112,8 @@ public:
             });
 
         m_occ_map_sub_ = this->template create_subscription<nav_msgs::msg::OccupancyGrid>(
-            m_occ_map_topic_,
-            Super::GetQoS(m_occ_map_topic_reliability_, m_occ_map_topic_durability_),
+            m_ltl_config_.occ_map_topic.path,
+            m_ltl_config_.occ_map_topic.GetQoS(),
             [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_occ_map_mutex_);
                 m_occ_map_ = *msg;
@@ -226,8 +121,8 @@ public:
             });
 
         m_aut_sub_ = this->template create_subscription<std_msgs::msg::String>(
-            m_aut_topic_,
-            Super::GetQoS(m_aut_topic_reliability_, m_aut_topic_durability_),
+            m_ltl_config_.aut_topic.path,
+            m_ltl_config_.aut_topic.GetQoS(),
             [this](const std_msgs::msg::String::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_aut_mutex_);
                 m_aut_msg_ = *msg;
@@ -239,11 +134,11 @@ public:
                     // be used by the old env, fsa and heuristic on other threads.
                     m_fsa_setting_ = std::make_shared<FiniteStateAutomaton::Setting>();
                     m_fsa_setting_->FromSpotGraphHoaString(m_aut_msg_.data, false /* complete */);
-                } catch (const std::exception& e) {
+                } catch (const std::exception &e) {
                     RCLCPP_ERROR(
                         this->get_logger(),
                         "Failed to load FSA from topic %s: %s",
-                        m_aut_topic_.c_str(),
+                        m_ltl_config_.aut_topic.path.c_str(),
                         e.what());
                     return;
                 }
@@ -276,7 +171,7 @@ public:
                 RCLCPP_ERROR(this->get_logger(), "FSA setting is null!");
                 return nullptr;
             }
-            m_env_setting_->fsa = m_fsa_setting_;
+            m_ltl_config_.env->fsa = m_fsa_setting_;
         }
 
         // GridMap: TYPE_32SC1, each pixel is the label of the cell.
@@ -394,7 +289,7 @@ public:
                                static_cast<int>(occ_map.info.height),
                                static_cast<int>(occ_map.info.width),
                                erl::common::CvMatType<MapDtype>(),
-                               reinterpret_cast<MapDtype*>(occ_map.data.data()))
+                               reinterpret_cast<MapDtype *>(occ_map.data.data()))
                                .t();
         cost_map.copyTo(cost_map);  // deep copy because map is temporary
 
@@ -402,7 +297,7 @@ public:
             m_label_matrix_,
             m_grid_map_info_,
             cost_map,
-            m_env_setting_,
+            m_ltl_config_.env,
             m_cost_);
 
         {
@@ -414,7 +309,7 @@ public:
     }
 
     [[nodiscard]] MetricState
-    GetStartFromPoseMsg(const geometry_msgs::msg::TransformStamped& pose_msg) const override {
+    GetStartFromPoseMsg(const geometry_msgs::msg::TransformStamped &pose_msg) const override {
         MetricState start;
         start[0] = static_cast<Dtype>(pose_msg.transform.translation.x);
         start[1] = static_cast<Dtype>(pose_msg.transform.translation.y);
@@ -445,11 +340,11 @@ public:
 
     void
     BeforeAstar(
-        std::shared_ptr<Env>& /* env */,
-        MetricState& start,
-        std::vector<MetricState>& goals,
-        std::vector<MetricState>& goals_tolerances,
-        std::vector<Dtype>& terminal_costs) override {
+        std::shared_ptr<Env> & /* env */,
+        MetricState &start,
+        std::vector<MetricState> &goals,
+        std::vector<MetricState> &goals_tolerances,
+        std::vector<Dtype> &terminal_costs) override {
         auto fsa_setting = m_fsa_->GetSetting();
 
         start[2] = fsa_setting->initial_state;  // initial FSA state
@@ -463,12 +358,12 @@ public:
                 this->get_logger(),
                 "Adding goal state with accepting FSA state %f.",
                 acc_state);
-            for (auto& goal: goals) { goal[2] = acc_state; }
+            for (auto &goal: goals) { goal[2] = acc_state; }
         } else {
             std::vector<MetricState> new_goals;
             new_goals.reserve(goals.size() * n_acc_states);
-            for (const auto& goal: goals) {
-                for (const auto& acc_state: fsa_setting->accepting_states) {
+            for (const auto &goal: goals) {
+                for (const auto &acc_state: fsa_setting->accepting_states) {
                     RCLCPP_INFO(
                         this->get_logger(),
                         "Adding goal state with accepting FSA state %u.",
@@ -483,7 +378,7 @@ public:
             if (goals_tolerances.size() > 1) {
                 std::vector<MetricState> new_goals_tolerances;
                 new_goals_tolerances.reserve(goals_tolerances.size() * n_acc_states);
-                for (const auto& goal_tol: goals_tolerances) {
+                for (const auto &goal_tol: goals_tolerances) {
                     new_goals_tolerances.insert(new_goals_tolerances.end(), n_acc_states, goal_tol);
                 }
                 goals_tolerances = std::move(new_goals_tolerances);
@@ -492,7 +387,7 @@ public:
             if (terminal_costs.size() > 1) {
                 std::vector<Dtype> new_terminal_costs;
                 new_terminal_costs.reserve(terminal_costs.size() * n_acc_states);
-                for (const auto& term_cost: terminal_costs) {
+                for (const auto &term_cost: terminal_costs) {
                     new_terminal_costs.insert(new_terminal_costs.end(), n_acc_states, term_cost);
                 }
                 terminal_costs = std::move(new_terminal_costs);
@@ -501,7 +396,7 @@ public:
     }
 
     void
-    LoadPathToMsg(const PlanRecord& plan_record, nav_msgs::msg::Path& path_msg) const override {
+    LoadPathToMsg(const PlanRecord &plan_record, nav_msgs::msg::Path &path_msg) const override {
         const long n_wp = plan_record.path.cols();
         path_msg.poses.clear();
         path_msg.poses.reserve(n_wp);
@@ -544,7 +439,7 @@ public:
 };
 
 int
-main(int argc, char** argv) {
+main(int argc, char **argv) {
     rclcpp::init(argc, argv);
 
     // Create a node to read parameters

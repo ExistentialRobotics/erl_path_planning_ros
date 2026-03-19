@@ -1,3 +1,4 @@
+#include "erl_common/ros2_topic_params.hpp"
 #include "erl_path_planning/astar.hpp"
 #include "erl_path_planning/heuristic.hpp"
 #include "erl_path_planning/search_planning_interface.hpp"
@@ -17,6 +18,44 @@
 #include <memory>
 #include <mutex>
 
+template<typename Dtype>
+struct AstarNodeConfig : public erl::common::Yamlable<AstarNodeConfig<Dtype>> {
+    using Ros2TopicParams = erl::common::ros_params::Ros2TopicParams;
+
+    std::string global_frame = "map";
+    std::string robot_frame = "base_link";
+    std::string start_source = "topic";
+
+    Ros2TopicParams start_topic{"start"};
+    Ros2TopicParams goal_topic{"goals"};
+    Ros2TopicParams goal_tolerance_topic{"goal_tolerances"};
+    Ros2TopicParams terminal_cost_topic{"terminal_costs"};
+    Ros2TopicParams path_topic{"path"};
+    Ros2TopicParams cost_topic{"cost"};
+    Ros2TopicParams goal_idx_topic{"goal_index"};
+    Ros2TopicParams plan_srv{"plan_path", "services"};
+    Ros2TopicParams reset_srv{"reset_planner", "services"};
+
+    std::shared_ptr<erl::path_planning::astar::AstarSetting<Dtype>> astar =
+        std::make_shared<erl::path_planning::astar::AstarSetting<Dtype>>();
+
+    ERL_REFLECT_SCHEMA(
+        AstarNodeConfig,
+        ERL_REFLECT_MEMBER(AstarNodeConfig, global_frame),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, robot_frame),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, start_source),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, start_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, goal_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, goal_tolerance_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, terminal_cost_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, path_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, cost_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, goal_idx_topic),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, plan_srv),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, reset_srv),
+        ERL_REFLECT_MEMBER(AstarNodeConfig, astar));
+};
+
 template<typename Dtype, int Dim>
 class AstarNode : public rclcpp::Node {
 public:
@@ -30,45 +69,7 @@ public:
     using Heuristic = typename SearchPlanningInterface::Heuristic;
 
 protected:
-    std::string m_default_qos_reliability_ = "reliable";  // or best_effort
-    std::string m_default_qos_durability_ = "volatile";   // or transient_local
-
-    std::string m_global_frame_ = "map";
-    std::string m_robot_frame_ = "base_link";
-
-    std::string m_start_source_ = "topic";  // "topic" or "tf"
-    std::string m_start_topic_ = "start";
-    std::string m_start_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_start_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_goal_topic_ = "goals";
-    std::string m_goal_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_goal_tolerance_topic_ = "goal_tolerances";
-    std::string m_goal_tolerance_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_tolerance_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_terminal_cost_topic_ = "terminal_costs";
-    std::string m_terminal_cost_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_terminal_cost_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_path_topic_ = "path";
-    std::string m_path_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_path_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_cost_topic_ = "cost";
-    std::string m_cost_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_cost_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_goal_idx_topic_ = "goal_index";
-    std::string m_goal_idx_topic_reliability_ = m_default_qos_reliability_;
-    std::string m_goal_idx_topic_durability_ = m_default_qos_durability_;
-
-    std::string m_plan_srv_name_ = "plan_path";
-    std::string m_reset_srv_name_ = "reset_planner";
-
-    std::shared_ptr<AstarSetting> m_astar_setting_ = std::make_shared<AstarSetting>();
+    AstarNodeConfig<Dtype> m_config_;
 
     std::shared_ptr<rclcpp::ParameterEventHandler> m_param_event_handler_;
     rclcpp::ParameterEventCallbackHandle::SharedPtr m_param_event_cb_handle_;
@@ -104,162 +105,18 @@ protected:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_reset_srv_;  // reset service
 
 public:
-    explicit AstarNode(const std::string& node_name)
+    explicit AstarNode(const std::string &node_name)
         : rclcpp::Node(node_name),
           m_param_event_handler_(std::make_shared<rclcpp::ParameterEventHandler>(this)),
           m_tf_buffer_(std::make_shared<tf2_ros::Buffer>(this->get_clock())),
           m_tf_listener_(std::make_shared<tf2_ros::TransformListener>(*m_tf_buffer_)) {
 
-        this->declare_parameter("default_qos_reliability", m_default_qos_reliability_);
-        this->declare_parameter("default_qos_durability", m_default_qos_durability_);
-        this->get_parameter("default_qos_reliability", m_default_qos_reliability_);
-        this->get_parameter("default_qos_durability", m_default_qos_durability_);
+        // Load all parameters via Yamlable interface
+        ERL_ASSERTM(m_config_.LoadFromRos2(this, ""), "Failed to load parameters");
 
-        // Declare parameters
-        this->declare_parameter("global_frame", m_global_frame_);
-        this->declare_parameter("robot_frame", m_robot_frame_);
-        this->declare_parameter("start_source", m_start_source_);
-        this->declare_parameter("start_topic", m_start_topic_);
-        this->declare_parameter("start_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("start_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("goal_topic", m_goal_topic_);
-        this->declare_parameter("goal_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("goal_tolerance_topic", m_goal_tolerance_topic_);
-        this->declare_parameter("goal_tolerance_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_tolerance_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("terminal_cost_topic", m_terminal_cost_topic_);
-        this->declare_parameter("terminal_cost_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("terminal_cost_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("path_topic", m_path_topic_);
-        this->declare_parameter("path_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("path_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("cost_topic", m_cost_topic_);
-        this->declare_parameter("cost_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("cost_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("goal_idx_topic", m_goal_idx_topic_);
-        this->declare_parameter("goal_idx_topic_reliability", m_default_qos_reliability_);
-        this->declare_parameter("goal_idx_topic_durability", m_default_qos_durability_);
-        this->declare_parameter("plan_srv_name", m_plan_srv_name_);
-        this->declare_parameter("reset_srv_name", m_reset_srv_name_);
+        RCLCPP_INFO(this->get_logger(), "Loaded parameters:\n%s", m_config_.AsYamlString().c_str());
 
-        this->declare_parameter("eps", m_astar_setting_->eps);
-        this->declare_parameter("max_num_iterations", m_astar_setting_->max_num_iterations);
-        this->declare_parameter("log", m_astar_setting_->log);
-        this->declare_parameter("reopen_inconsistent", m_astar_setting_->reopen_inconsistent);
-
-        // Get parameters
-#define GET_PARAM(param_name, member)                           \
-    if (!this->get_parameter(param_name, member)) {             \
-        RCLCPP_WARN(                                            \
-            this->get_logger(),                                 \
-            "Failed to get parameter %s, using default value.", \
-            param_name);                                        \
-    }                                                           \
-    (void) 0
-
-        GET_PARAM("global_frame", m_global_frame_);
-        GET_PARAM("robot_frame", m_robot_frame_);
-        GET_PARAM("start_source", m_start_source_);
-        GET_PARAM("start_topic", m_start_topic_);
-        GET_PARAM("start_topic_reliability", m_start_topic_reliability_);
-        GET_PARAM("start_topic_durability", m_start_topic_durability_);
-        GET_PARAM("goal_topic", m_goal_topic_);
-        GET_PARAM("goal_topic_reliability", m_goal_topic_reliability_);
-        GET_PARAM("goal_topic_durability", m_goal_topic_durability_);
-        GET_PARAM("goal_tolerance_topic", m_goal_tolerance_topic_);
-        GET_PARAM("goal_tolerance_topic_reliability", m_goal_tolerance_topic_reliability_);
-        GET_PARAM("goal_tolerance_topic_durability", m_goal_tolerance_topic_durability_);
-        GET_PARAM("terminal_cost_topic", m_terminal_cost_topic_);
-        GET_PARAM("terminal_cost_topic_reliability", m_terminal_cost_topic_reliability_);
-        GET_PARAM("terminal_cost_topic_durability", m_terminal_cost_topic_durability_);
-        GET_PARAM("path_topic", m_path_topic_);
-        GET_PARAM("path_topic_reliability", m_path_topic_reliability_);
-        GET_PARAM("path_topic_durability", m_path_topic_durability_);
-        GET_PARAM("cost_topic", m_cost_topic_);
-        GET_PARAM("cost_topic_reliability", m_cost_topic_reliability_);
-        GET_PARAM("cost_topic_durability", m_cost_topic_durability_);
-        GET_PARAM("goal_idx_topic", m_goal_idx_topic_);
-        GET_PARAM("goal_idx_topic_reliability", m_goal_idx_topic_reliability_);
-        GET_PARAM("goal_idx_topic_durability", m_goal_idx_topic_durability_);
-        GET_PARAM("plan_srv_name", m_plan_srv_name_);
-        GET_PARAM("reset_srv_name", m_reset_srv_name_);
-        GET_PARAM("eps", m_astar_setting_->eps);
-        GET_PARAM("max_num_iterations", m_astar_setting_->max_num_iterations);
-        GET_PARAM("log", m_astar_setting_->log);
-        GET_PARAM("reopen_inconsistent", m_astar_setting_->reopen_inconsistent);
-#undef GET_PARAM
-
-        // Print parameters
-        RCLCPP_INFO(
-            this->get_logger(),
-            "Loaded parameters:\n"
-            "default_qos_reliability: %s\n"
-            "default_qos_durability: %s\n"
-            "global_frame: %s\n"
-            "robot_frame: %s\n"
-            "start_source: %s\n"
-            "start_topic: %s\n"
-            "start_topic_reliability: %s\n"
-            "start_topic_durability: %s\n"
-            "goal_topic: %s\n"
-            "goal_topic_reliability: %s\n"
-            "goal_topic_durability: %s\n"
-            "goal_tolerance_topic: %s\n"
-            "goal_tolerance_topic_reliability: %s\n"
-            "goal_tolerance_topic_durability: %s\n"
-            "terminal_cost_topic: %s\n"
-            "terminal_cost_topic_reliability: %s\n"
-            "terminal_cost_topic_durability: %s\n"
-            "path_topic: %s\n"
-            "path_topic_reliability: %s\n"
-            "path_topic_durability: %s\n"
-            "cost_topic: %s\n"
-            "cost_topic_reliability: %s\n"
-            "cost_topic_durability: %s\n"
-            "goal_idx_topic: %s\n"
-            "goal_idx_topic_reliability: %s\n"
-            "goal_idx_topic_durability: %s\n"
-            "plan_srv_name: %s\n"
-            "reset_srv_name: %s\n"
-            "eps: %f\n"
-            "max_num_iterations: %ld\n"
-            "log: %s\n"
-            "reopen_inconsistent: %s",
-            m_default_qos_reliability_.c_str(),
-            m_default_qos_durability_.c_str(),
-            m_global_frame_.c_str(),
-            m_robot_frame_.c_str(),
-            m_start_source_.c_str(),
-            m_start_topic_.c_str(),
-            m_start_topic_reliability_.c_str(),
-            m_start_topic_durability_.c_str(),
-            m_goal_topic_.c_str(),
-            m_goal_topic_reliability_.c_str(),
-            m_goal_topic_durability_.c_str(),
-            m_goal_tolerance_topic_.c_str(),
-            m_goal_tolerance_topic_reliability_.c_str(),
-            m_goal_tolerance_topic_durability_.c_str(),
-            m_terminal_cost_topic_.c_str(),
-            m_terminal_cost_topic_reliability_.c_str(),
-            m_terminal_cost_topic_durability_.c_str(),
-            m_path_topic_.c_str(),
-            m_path_topic_reliability_.c_str(),
-            m_path_topic_durability_.c_str(),
-            m_cost_topic_.c_str(),
-            m_cost_topic_reliability_.c_str(),
-            m_cost_topic_durability_.c_str(),
-            m_goal_idx_topic_.c_str(),
-            m_goal_idx_topic_reliability_.c_str(),
-            m_goal_idx_topic_durability_.c_str(),
-            m_plan_srv_name_.c_str(),
-            m_reset_srv_name_.c_str(),
-            m_astar_setting_->eps,
-            m_astar_setting_->max_num_iterations,
-            m_astar_setting_->log ? "true" : "false",
-            m_astar_setting_->reopen_inconsistent ? "true" : "false");
-
-        // Set parameter change callback
+        // Set parameter change callback for runtime-configurable params
 #define SET_PARAM_IF(param, param_name, param_type, member)  \
     if (param.get_name() == param_name) {                    \
         if (param.get_type() == param_type) {                \
@@ -281,9 +138,9 @@ public:
     (void) 0
 
         m_param_event_cb_handle_ = m_param_event_handler_->add_parameter_event_callback(
-            [this](const rcl_interfaces::msg::ParameterEvent& event) {
+            [this](const rcl_interfaces::msg::ParameterEvent &event) {
                 auto params = rclcpp::ParameterEventHandler::get_parameters_from_event(event);
-                for (auto& p: params) {
+                for (auto &p: params) {
                     RCLCPP_INFO(
                         this->get_logger(),
                         "Received an update to parameter \"%s\" of type %s: \"%s\"",
@@ -294,38 +151,38 @@ public:
                         p,
                         "global_frame",
                         rclcpp::ParameterType::PARAMETER_STRING,
-                        this->m_global_frame_);
+                        this->m_config_.global_frame);
                     SET_PARAM_IF(
                         p,
                         "robot_frame",
                         rclcpp::ParameterType::PARAMETER_STRING,
-                        this->m_robot_frame_);
+                        this->m_config_.robot_frame);
                     SET_PARAM_IF(
                         p,
                         "start_source",
                         rclcpp::ParameterType::PARAMETER_STRING,
-                        this->m_start_source_);
+                        this->m_config_.start_source);
                     // topic parameters are not allowed to be changed --- IGNORE ---
                     SET_PARAM_IF(
                         p,
-                        "eps",
+                        "astar.eps",
                         rclcpp::ParameterType::PARAMETER_DOUBLE,
-                        this->m_astar_setting_->eps);
+                        this->m_config_.astar->eps);
                     SET_PARAM_IF(
                         p,
-                        "max_num_iterations",
+                        "astar.max_num_iterations",
                         rclcpp::ParameterType::PARAMETER_INTEGER,
-                        this->m_astar_setting_->max_num_iterations);
+                        this->m_config_.astar->max_num_iterations);
                     SET_PARAM_IF(
                         p,
-                        "log",
+                        "astar.log",
                         rclcpp::ParameterType::PARAMETER_BOOL,
-                        this->m_astar_setting_->log);
+                        this->m_config_.astar->log);
                     SET_PARAM_IF(
                         p,
-                        "reopen_inconsistent",
+                        "astar.reopen_inconsistent",
                         rclcpp::ParameterType::PARAMETER_BOOL,
-                        this->m_astar_setting_->reopen_inconsistent);
+                        this->m_config_.astar->reopen_inconsistent);
                 }
             });
 
@@ -333,8 +190,8 @@ public:
 
         // Initialize subscribers
         m_start_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            m_start_topic_,
-            GetQoS(m_start_topic_reliability_, m_start_topic_durability_),
+            m_config_.start_topic.path,
+            m_config_.start_topic.GetQoS(),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_start_mutex_);
                 m_start_ = *msg;
@@ -342,8 +199,8 @@ public:
             });
 
         m_goal_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            m_goal_topic_,
-            GetQoS(m_goal_topic_reliability_, m_goal_topic_durability_),
+            m_config_.goal_topic.path,
+            m_config_.goal_topic.GetQoS(),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_goals_mutex_);
                 m_goals_ = *msg;
@@ -351,8 +208,8 @@ public:
             });
 
         m_goal_tolerance_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            m_goal_tolerance_topic_,
-            GetQoS(m_goal_tolerance_topic_reliability_, m_goal_tolerance_topic_durability_),
+            m_config_.goal_tolerance_topic.path,
+            m_config_.goal_tolerance_topic.GetQoS(),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_goal_tolerances_mutex_);
                 m_goal_tolerances_ = *msg;
@@ -360,68 +217,61 @@ public:
             });
 
         m_terminal_cost_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            m_terminal_cost_topic_,
-            GetQoS(m_terminal_cost_topic_reliability_, m_terminal_cost_topic_durability_),
+            m_config_.terminal_cost_topic.path,
+            m_config_.terminal_cost_topic.GetQoS(),
             [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
                 std::lock_guard<std::mutex> lock(m_terminal_costs_mutex_);
                 m_terminal_costs_ = *msg;
                 m_terminal_costs_received_ = true;
             });
 
-        // Initialize publisher
+        // Initialize publishers
         m_path_pub_ = this->create_publisher<nav_msgs::msg::Path>(
-            m_path_topic_,
-            GetQoS(m_path_topic_reliability_, m_path_topic_durability_));
+            m_config_.path_topic.path,
+            m_config_.path_topic.GetQoS());
         m_cost_pub_ = this->create_publisher<std_msgs::msg::Float64>(
-            m_cost_topic_,
-            GetQoS(m_cost_topic_reliability_, m_cost_topic_durability_));
+            m_config_.cost_topic.path,
+            m_config_.cost_topic.GetQoS());
         m_goal_idx_pub_ = this->create_publisher<std_msgs::msg::Int64>(
-            m_goal_idx_topic_,
-            GetQoS(m_goal_idx_topic_reliability_, m_goal_idx_topic_durability_));
+            m_config_.goal_idx_topic.path,
+            m_config_.goal_idx_topic.GetQoS());
 
-        // Initialize services
+// Initialize services
+#ifdef ROS_HUMBLE
         m_plan_srv_ = this->create_service<std_srvs::srv::Trigger>(
-            m_plan_srv_name_,
+            m_config_.plan_srv.path,
             std::bind(
                 &AstarNode::CallbackSrvPlan,
                 this,
                 std::placeholders::_1,
-                std::placeholders::_2));
+                std::placeholders::_2),
+            m_config_.plan_srv.GetQoS().get_rmw_qos_profile());
         m_reset_srv_ = this->create_service<std_srvs::srv::Trigger>(
-            m_reset_srv_name_,
+            m_config_.reset_srv.path,
             std::bind(
                 &AstarNode::CallbackSrvReset,
                 this,
                 std::placeholders::_1,
-                std::placeholders::_2));
-    }
-
-    rclcpp::QoS
-    GetQoS(const std::string& reliability, const std::string& durability) {
-        rclcpp::QoS qos(1);
-        if (reliability == "reliable") {
-            qos.reliable();
-        } else if (reliability == "best_effort") {
-            qos.best_effort();
-        } else {
-            RCLCPP_WARN(
-                this->get_logger(),
-                "Unknown reliability %s, using reliable.",
-                reliability.c_str());
-            qos.reliable();
-        }
-        if (durability == "volatile") {
-            qos.durability_volatile();
-        } else if (durability == "transient_local") {
-            qos.transient_local();
-        } else {
-            RCLCPP_WARN(
-                this->get_logger(),
-                "Unknown durability %s, using transient_local.",
-                durability.c_str());
-            qos.transient_local();
-        }
-        return qos;
+                std::placeholders::_2),
+            m_config_.reset_srv.GetQoS().get_rmw_qos_profile());
+#else
+        m_plan_srv_ = this->create_service<std_srvs::srv::Trigger>(
+            m_config_.plan_srv.path,
+            std::bind(
+                &AstarNode::CallbackSrvPlan,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2),
+            m_config_.plan_srv.GetQoS());
+        m_reset_srv_ = this->create_service<std_srvs::srv::Trigger>(
+            m_config_.reset_srv.path,
+            std::bind(
+                &AstarNode::CallbackSrvReset,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2),
+            m_config_.reset_srv.GetQoS());
+#endif
     }
 
     virtual ~AstarNode() = default;
@@ -443,7 +293,7 @@ public:
      * @return The start state in the state space.
      */
     [[nodiscard]] virtual MetricState
-    GetStartFromPoseMsg(const geometry_msgs::msg::TransformStamped& pose_msg) const = 0;
+    GetStartFromPoseMsg(const geometry_msgs::msg::TransformStamped &pose_msg) const = 0;
 
     /**
      * Create the heuristic for the planner. The derived class must implement this method.
@@ -458,19 +308,19 @@ public:
      * @param path_msg The ROS path message to be filled.
      */
     virtual void
-    LoadPathToMsg(const PlanRecord& plan_record, nav_msgs::msg::Path& path_msg) const = 0;
+    LoadPathToMsg(const PlanRecord &plan_record, nav_msgs::msg::Path &path_msg) const = 0;
 
     bool
-    GetStartPoseFromTf(const rclcpp::Time& time, geometry_msgs::msg::TransformStamped& start_pose)
+    GetStartPoseFromTf(const rclcpp::Time &time, geometry_msgs::msg::TransformStamped &start_pose)
         const {
         // get the latest transform from the tf buffer
         try {
             start_pose = m_tf_buffer_->lookupTransform(
-                m_global_frame_,
-                m_robot_frame_,
+                m_config_.global_frame,
+                m_config_.robot_frame,
                 time,
                 rclcpp::Duration::from_seconds(5.0));
-        } catch (tf2::TransformException& ex) {
+        } catch (tf2::TransformException &ex) {
             RCLCPP_WARN(this->get_logger(), "%s", ex.what());
             return false;
         }
@@ -483,7 +333,7 @@ public:
      * @return True if the start state is successfully obtained, false otherwise.
      */
     bool
-    GetStartFromTopicMsg(MetricState& start) {
+    GetStartFromTopicMsg(MetricState &start) {
         std::lock_guard<std::mutex> lock(m_start_mutex_);
         if (!m_start_received_) {
             RCLCPP_WARN(this->get_logger(), "Start is not received yet.");
@@ -518,7 +368,7 @@ public:
     }
 
     bool
-    GetGoalsFromTopicMsg(std::vector<MetricState>& goals) {
+    GetGoalsFromTopicMsg(std::vector<MetricState> &goals) {
         std::lock_guard<std::mutex> lock(m_goals_mutex_);
         if (!m_goals_received_) {
             RCLCPP_WARN(this->get_logger(), "Goals are not received yet.");
@@ -573,7 +423,7 @@ public:
             return false;
         }
         goals.resize(n_goals);
-        const double* data_ptr = m_goals_.data.data();
+        const double *data_ptr = m_goals_.data.data();
         for (std::size_t i = 0; i < n_goals; ++i) {
             for (int d = 0; d < Dim; ++d) { goals[i][d] = static_cast<Dtype>(*(data_ptr++)); }
         }
@@ -581,7 +431,7 @@ public:
     }
 
     bool
-    GetGoalTolerancesFromTopicMsg(std::vector<MetricState>& goal_tolerances) {
+    GetGoalTolerancesFromTopicMsg(std::vector<MetricState> &goal_tolerances) {
         std::lock_guard<std::mutex> lock(m_goal_tolerances_mutex_);
         if (!m_goal_tolerances_received_) {
             RCLCPP_WARN(this->get_logger(), "Goals tolerances are not received yet.");
@@ -641,7 +491,7 @@ public:
             return false;
         }
         goal_tolerances.resize(n_goals);
-        const double* data_ptr = m_goal_tolerances_.data.data();
+        const double *data_ptr = m_goal_tolerances_.data.data();
         for (std::size_t i = 0; i < n_goals; ++i) {
             for (int d = 0; d < Dim; ++d) {
                 goal_tolerances[i][d] = static_cast<Dtype>(*(data_ptr++));
@@ -651,7 +501,7 @@ public:
     }
 
     bool
-    GetTerminalCostsFromTopicMsg(std::vector<Dtype>& terminal_costs) {
+    GetTerminalCostsFromTopicMsg(std::vector<Dtype> &terminal_costs) {
         std::lock_guard<std::mutex> lock(m_terminal_costs_mutex_);
         if (!m_terminal_costs_received_) {
             RCLCPP_WARN(this->get_logger(), "Terminal costs are not received yet.");
@@ -691,14 +541,14 @@ public:
      */
     virtual void
     BeforeAstar(
-        std::shared_ptr<Env>& /* env */,
-        MetricState& /* start */,
-        std::vector<MetricState>& /* goals */,
-        std::vector<MetricState>& /* goals_tolerances */,
-        std::vector<Dtype>& /* terminal_costs */) {}
+        std::shared_ptr<Env> & /* env */,
+        MetricState & /* start */,
+        std::vector<MetricState> & /* goals */,
+        std::vector<MetricState> & /* goals_tolerances */,
+        std::vector<Dtype> & /* terminal_costs */) {}
 
     bool
-    RunAstar(const std_msgs::msg::Header& header) {
+    RunAstar(const std_msgs::msg::Header &header) {
         std::shared_ptr<Env> env = GetEnv();
         if (env == nullptr) {
             RCLCPP_ERROR(this->get_logger(), "Environment for planning is not ready.");
@@ -706,12 +556,12 @@ public:
         }
 
         MetricState start;
-        if (m_start_source_ == "topic") {
+        if (m_config_.start_source == "topic") {
             if (!GetStartFromTopicMsg(start)) {
                 RCLCPP_WARN(this->get_logger(), "Failed to get start from topic.");
                 return false;
             }
-        } else if (m_start_source_ == "tf") {
+        } else if (m_config_.start_source == "tf") {
             geometry_msgs::msg::TransformStamped start_pose;
             if (!GetStartPoseFromTf(header.stamp, start_pose)) {
                 RCLCPP_WARN(this->get_logger(), "Failed to get start from tf.");
@@ -722,7 +572,7 @@ public:
             RCLCPP_ERROR(
                 this->get_logger(),
                 "Unknown start source: %s. Supported sources are 'topic' and 'tf'.",
-                m_start_source_.c_str());
+                m_config_.start_source.c_str());
             return false;
         }
 
@@ -779,9 +629,9 @@ public:
             terminal_costs,
             heuristic);
 
-        AStar astar(planning_interface, m_astar_setting_);
+        AStar astar(planning_interface, m_config_.astar);
         std::shared_ptr<AStarOutput> output = astar.Plan();
-        const PlanRecord* plan_record = output->GetLatestRecord();
+        const PlanRecord *plan_record = output->GetLatestRecord();
         if (plan_record == nullptr) {
             RCLCPP_WARN(this->get_logger(), "No path found.");
             return false;
@@ -790,7 +640,7 @@ public:
         // Convert to nav_msgs::msg::Path
         nav_msgs::msg::Path path_msg;
         path_msg.header = header;
-        path_msg.header.frame_id = m_global_frame_;
+        path_msg.header.frame_id = m_config_.global_frame;
         LoadPathToMsg(*plan_record, path_msg);
 
         // Publish results
@@ -815,7 +665,7 @@ public:
         rclcpp::Time current_time = this->now();
         std_msgs::msg::Header header;
         header.stamp = current_time;
-        header.frame_id = m_global_frame_;
+        header.frame_id = m_config_.global_frame;
         if (RunAstar(header)) {
             response->success = true;
             response->message = "Planning succeeded.";

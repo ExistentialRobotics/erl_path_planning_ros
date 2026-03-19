@@ -35,8 +35,13 @@ def generate_launch_description():
         # prefix=["gdbserver localhost:3000"],
         parameters=[
             {
-                "default_qos_reliability": "reliable",
-                "default_qos_durability": "transient_local",
+                "start_topic.qos_durability": "transient_local",
+                "goal_topic.qos_durability": "transient_local",
+                "goal_tolerance_topic.qos_durability": "transient_local",
+                "terminal_cost_topic.qos_durability": "transient_local",
+                "path_topic.qos_durability": "transient_local",
+                "cost_topic.qos_durability": "transient_local",
+                "goal_idx_topic.qos_durability": "transient_local",
             }
         ],
         output="screen",

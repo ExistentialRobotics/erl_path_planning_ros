@@ -37,7 +37,6 @@ except ImportError:
 with open("pyproject.toml", "r") as f:
     config = tomllib.loads("".join(f.readlines()))
 python_pkg_name = config["project"]["name"]
-pybind_module_name = config["erl"]["pybind_module_name"]
 cmake_build_type = config["erl"].get("build_type", "Release")
 cmake_ignore_conda_libraries = config["erl"].get("ignore_conda_libraries", "ON")
 cmake_use_lapack = config["erl"].get("use_lapack", "ON")
@@ -247,9 +246,8 @@ setup(
     version=config["project"]["version"],
     author=config["project"]["authors"][0]["name"],
     author_email=config["project"]["authors"][0]["email"],
-    license=config["project"]["license"],
-    ext_modules=[] if len(pybind_module_name) == 0 else [CMakeExtension(pybind_module_name)],
-    cmdclass={} if len(pybind_module_name) == 0 else {"build_ext": CMakeBuild},
+    ext_modules=[CMakeExtension(python_pkg_name)],
+    cmdclass={"build_ext": CMakeBuild},
     install_requires=requires,
     packages=find_packages("python"),
     package_dir={python_pkg_name: f"python/{python_pkg_name}"},
