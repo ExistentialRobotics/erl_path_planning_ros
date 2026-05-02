@@ -10,7 +10,7 @@ build_type = "Release"
 
 [project]
 name = "erl_path_planning_ros"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python package for erl_path_planning_ros"
 authors = [
     { name = "Zhirui Dai", email = "daizhirui@hotmail.com" }

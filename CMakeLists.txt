@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(erl_path_planning_ros #
     LANGUAGES CXX #
-    VERSION 0.1.0 #
+    VERSION 0.2.0 #
     DESCRIPTION "erl_path_planning_ros is a ROS package of erl_path_planning")
 message(STATUS "Configuring ${PROJECT_NAME} ${PROJECT_VERSION}")
 
